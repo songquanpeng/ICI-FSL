@@ -1,26 +1,26 @@
 # Instance Credibility Inference for Few-Shot Learning
 
-\[[paper](https://arxiv.org/pdf/2003.11853.pdf)\]\[[intro](https://yikai-wang.github.io/ici)\]\[[中文介绍](https://zhuanlan.zhihu.com/p/120354934)\]
+Forked from [Yikai-Wang/ICI-FSL](https://github.com/Yikai-Wang/ICI-FSL).
 
-This repository contains the code for our paper "Instance Credibility Inference for Few-Shot Learning". 
+Added some comments and made some changes to the code.
+
 
 ## Requirements
-
+```
 python=3.7.3
-
 torch=1.1.0
-
 sklearn=0.21.2
-
 tqdm
-
-*Note:* We have found the existence of randomness when running the code under different servers even we use the same version of packages. Hence the accuracy may rise or fall by about 1% compared with our reported performance. 
+```
 
 ## Usage
+Download the miniImageNet from [here](https://mtl.yyliu.net/download/Lmzjm9tX.html).
 
-The image path of each dataset is save in the corresponding *train.csv*, *valid.csv*, *test.csv* files, you may create the list to match the dataset in your machine or re-write the *DataSet* and *EmbeddingDataset* class in the *datasets.py* based on your data.
+Then you have to create three csv files: *train.csv*, *valid.csv*, *test.csv*.
 
-When training and testing, you need to set some hyperparameters. For example:
+The header of those csv files: `filename, label`.
+
+When training and testing, you need to set some hyper parameters. For example:
 
 ```
 python main.py -g 2 --resume ckpt/res12_mini.pth.tar --dataset miniimagenet

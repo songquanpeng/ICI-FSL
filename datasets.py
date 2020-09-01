@@ -8,23 +8,26 @@ import numpy as np
 import PIL.Image as Image
 import torch
 from torch.utils.data import Dataset
-from torchvision import transforms
+from torchvision import transforms  # Used for image process
 from torchvision.transforms import Compose, Normalize, Resize, ToTensor
 
 
 class DataSet(Dataset):
-
+    """
+    You can use the [] operator to get the specified image.
+    """
     def __init__(self, data_root, setname, img_size):
         self.img_size = img_size
         csv_path = osp.join(data_root, setname + '.csv')
+        # Read all the lines in the given csv file but the header
         lines = [x.strip() for x in open(csv_path, 'r').readlines()][1:]
 
         data = []
         label = []
         lb = -1
-
+        # Id is the label
         self.wnids = []
-
+        # traverse all the lines in the
         for l in lines:
             name, wnid = l.split(',')
             path = osp.join(data_root, 'images', name)
@@ -36,20 +39,22 @@ class DataSet(Dataset):
 
         self.data = data
         self.label = label
-        if setname=='test' or setname=='val':
+        if setname == 'test' or setname == 'val':
             self.transform = transforms.Compose([
-                                               transforms.Resize((img_size, img_size)),
-                                               transforms.ToTensor(),
-                                               transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-                                       ])
+                transforms.Resize((img_size, img_size)),
+                # Convert a PIL Image or numpy.ndarray to tensor.
+                transforms.ToTensor(),
+                # The following parameters is the mean and std for ImageNet.
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ])
         else:
             self.transform = transforms.Compose([
-                                            transforms.RandomResizedCrop((img_size, img_size)),
-                                            transforms.RandomHorizontalFlip(),
-                                            transforms.ToTensor(),
-                                            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-                                        ])
-            
+                transforms.RandomResizedCrop((img_size, img_size)),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ])
+
     def __len__(self):
         return len(self.data)
 
@@ -61,12 +66,11 @@ class DataSet(Dataset):
         return image, 1
 
 
-class CategoriesSampler():
-
+class CategoriesSampler:
     def __init__(self, label, n_batch, n_cls, n_per):
-        self.n_batch = n_batch #num_batches
-        self.n_cls = n_cls # test_ways
-        self.n_per = np.sum(n_per) # num_per_class
+        self.n_batch = n_batch  # num_batches
+        self.n_cls = n_cls  # test_ways
+        self.n_per = np.sum(n_per)  # num_per_class
         self.number_distract = n_per[-1]
 
         label = np.array(label)
@@ -78,7 +82,7 @@ class CategoriesSampler():
 
     def __len__(self):
         return self.n_batch
-    
+
     def __iter__(self):
         for i_batch in range(self.n_batch):
             batch = []
@@ -92,7 +96,7 @@ class CategoriesSampler():
                 cls_indicator = np.zeros(self.n_per)
                 cls_indicator[:cls_batch.shape[0]] = 1
                 if cls_batch.shape[0] != self.n_per:
-                    cls_batch = torch.cat([cls_batch, -1*torch.ones([self.n_per-cls_batch.shape[0]]).long()], 0)
+                    cls_batch = torch.cat([cls_batch, -1 * torch.ones([self.n_per - cls_batch.shape[0]]).long()], 0)
                 batch.append(cls_batch)
                 indicator_batch.append(cls_indicator)
             batch = torch.stack(batch).t().reshape(-1)
@@ -101,49 +105,49 @@ class CategoriesSampler():
 
 filenameToPILImage = lambda x: Image.open(x).convert('RGB')
 
+
 def loadSplit(splitFile):
-            dictLabels = {}
-            with open(splitFile) as csvfile:
-                csvreader = csv.reader(csvfile, delimiter=',')
-                next(csvreader, None)
-                for i,row in enumerate(csvreader):
-                    filename = row[0]
-                    label = row[1]
-                    if label in dictLabels.keys():
-                        dictLabels[label].append(filename)
-                    else:
-                        dictLabels[label] = [filename]
-            return dictLabels
+    dictLabels = {}
+    with open(splitFile) as csvfile:
+        csvreader = csv.reader(csvfile, delimiter=',')
+        next(csvreader, None)
+        for i, row in enumerate(csvreader):
+            filename = row[0]
+            label = row[1]
+            if label in dictLabels.keys():
+                dictLabels[label].append(filename)
+            else:
+                dictLabels[label] = [filename]
+    return dictLabels
 
 
 class EmbeddingDataset(Dataset):
 
-    def __init__(self, dataroot, img_size, type = 'train'):
+    def __init__(self, dataroot, img_size, type='train'):
         self.img_size = img_size
         # Transformations to the image
-        if type=='train':
+        if type == 'train':
             self.transform = transforms.Compose([filenameToPILImage,
-                                                transforms.Resize((img_size, img_size)),
-                                                transforms.RandomCrop(img_size, padding=8),
-                                                transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
-                                                transforms.RandomHorizontalFlip(),
-                                                transforms.ToTensor(),
-                                                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-                                                ])
+                                                 transforms.Resize((img_size, img_size)),
+                                                 transforms.RandomCrop(img_size, padding=8),
+                                                 transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+                                                 transforms.RandomHorizontalFlip(),
+                                                 transforms.ToTensor(),
+                                                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+                                                 ])
         else:
             self.transform = transforms.Compose([filenameToPILImage,
-                                                transforms.Resize((img_size, img_size)),
-                                                transforms.ToTensor(),
-                                                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-                                                ])
+                                                 transforms.Resize((img_size, img_size)),
+                                                 transforms.ToTensor(),
+                                                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                                                 ])
 
-        
-        self.ImagesDir = os.path.join(dataroot,'images')
-        self.data = loadSplit(splitFile = os.path.join(dataroot,'train' + '.csv'))
+        self.ImagesDir = os.path.join(dataroot, 'images')
+        self.data = loadSplit(splitFile=os.path.join(dataroot, 'train' + '.csv'))
 
         self.data = collections.OrderedDict(sorted(self.data.items()))
         keys = list(self.data.keys())
-        self.classes_dict = {keys[i]:i  for i in range(len(keys))} # map NLabel to id(0-99)
+        self.classes_dict = {keys[i]: i for i in range(len(keys))}  # map NLabel to id(0-99)
 
         self.Files = []
         self.belong = []
@@ -155,11 +159,10 @@ class EmbeddingDataset(Dataset):
                 if type == 'train' and num <= num_train:
                     self.Files.append(file)
                     self.belong.append(c)
-                elif type=='val' and num>num_train:
+                elif type == 'val' and num > num_train:
                     self.Files.append(file)
                     self.belong.append(c)
-                num = num+1
-
+                num = num + 1
 
         self.__size = len(self.Files)
 
@@ -168,13 +171,13 @@ class EmbeddingDataset(Dataset):
         c = self.belong[index]
         File = self.Files[index]
 
-        path = os.path.join(self.ImagesDir,str(File))
+        path = os.path.join(self.ImagesDir, str(File))
         try:
             images = self.transform(path)
         except RuntimeError:
-            import pdb;pdb.set_trace()
-        return images,c
+            import pdb;
+            pdb.set_trace()
+        return images, c
 
     def __len__(self):
         return self.__size
-

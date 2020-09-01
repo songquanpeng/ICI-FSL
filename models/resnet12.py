@@ -6,6 +6,23 @@ from torch import nn as nn
 from torch.autograd import Variable
 from torch.distributions import Bernoulli
 
+'''
+Copied from the paper: 
+
+As in [30, 33, 23], we use ResNet-12 [13] with 4 residual
+blocks as the feature extractor in our experiments.
+Each block consists of three 3 X 3 convolution layers,
+each of which followed by a BatchNorm layer and a
+LeakyReLu(0.1) activation. In the end of each block, a
+2 X 2 max-pooling layer is utilized to reduce the output
+size. The number of filters in each block is 64, 128, 256
+and 512 respectively. Specifically, referring to [23], we
+adopt the Dropout [44] in the first two block to vanish 10%
+of the output, and adopt DropBlock [11] in the latter two
+blocks to vanish 10% of output in channel level. Finally,
+an average-pooling layer is employed to produce the input
+feature embedding.
+'''
 
 class DropBlock(nn.Module):
     def __init__(self, block_size):
