@@ -16,6 +16,7 @@ class DataSet(Dataset):
     """
     You can use the [] operator to get the specified image.
     """
+
     def __init__(self, data_root, setname, img_size):
         self.img_size = img_size
         csv_path = osp.join(data_root, setname + '.csv')
@@ -171,7 +172,7 @@ class EmbeddingDataset(Dataset):
         c = self.belong[index]
         File = self.Files[index]
 
-        path = os.path.join(self.ImagesDir, str(File))
+        path = str(File)
         try:
             images = self.transform(path)
         except RuntimeError:

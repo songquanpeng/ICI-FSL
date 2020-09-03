@@ -2,7 +2,7 @@ import os
 
 dataset_types = ['train', 'val', 'test']
 miniImageNet_path = r'D:\Research\Data\miniImageNet'
-generated_csv_path = r'D:\Research\Code\ICI-FSL\data\miniimagenet\images-lc'
+generated_csv_path = './data/miniImageNet'
 
 
 def generate_specified_csv(dataset_type):
