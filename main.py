@@ -2,6 +2,7 @@ import math
 import os
 
 import numpy as np
+import requests
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -67,8 +68,11 @@ def train_embedding(args):
             labels = labels.reshape(-1)
             acc += (predictions == labels).tolist()
         acc = np.mean(acc)
-        print('Epoch:{} Train-loss:{} Train-acc:{} Valid-acc:{}'.format(epoch, str(np.mean(loss_list))[:6], str(
-            np.mean(train_acc_list))[:6], str(acc)[:6]))
+        log_info = 'Epoch:{} Train-loss:{} Train-acc:{} Valid-acc:{}'.format(epoch, str(np.mean(loss_list))[:6], str(
+            np.mean(train_acc_list))[:6], str(acc)[:6])
+        print(log_info)
+        if 'MESSAGE_PUSH_URL' in os.environ:
+            requests.get(f"{os.environ['MESSAGE_PUSH_URL']}{log_info}")
         if acc > best_acc:
             best_acc = acc
             save_path = os.path.join(
@@ -100,13 +104,12 @@ def test(args):
               step=args.step, reduce=args.embed, d=args.dim)
     # Load the specified dataset.
     data_root = os.path.join(args.folder, args.dataset)
-    # dataset used to offer data which can be accessed by index
+    # DataSet is used to offer data which can be accessed by index
     test_dataset = DataSet(data_root, 'test', args.img_size)
-    # sample used to offer indexes
+    # sample is used to offer indexes
     sampler = CategoriesSampler(test_dataset.label, args.num_batches,
                                 args.num_test_ways, (args.num_shots, 15, args.unlabel))
-    test_loader = DataLoader(test_dataset, batch_sampler=sampler, shuffle=False, num_workers=args.num_workers,
-                             pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_sampler=sampler, num_workers=args.num_workers, pin_memory=True)
     k = args.num_shots * args.num_test_ways
     loader = tqdm(test_loader, ncols=0)
     iterations = math.ceil(args.unlabel / args.step) + 2 if args.unlabel != 0 else math.ceil(15 / args.step) + 2
@@ -123,13 +126,11 @@ def test(args):
         ici.fit(train_embeddings, train_targets)
         test_embeddings = get_embedding(model, test_inputs, args.device)
         if args.unlabel != 0:
-            unlabel_inputs = data[k + 15 * args.num_test_ways:]
-            unlabel_embeddings = get_embedding(
-                model, unlabel_inputs, args.device)
+            unlabeled_inputs = data[k + 15 * args.num_test_ways:]
+            unlabeled_embeddings = get_embedding(model, unlabeled_inputs, args.device)
         else:
-            unlabel_embeddings = None
-        acc = ici.predict(test_embeddings, unlabel_embeddings,
-                          True, test_targets)
+            unlabeled_embeddings = None
+        acc = ici.predict(test_embeddings, unlabeled_embeddings, True, test_targets)
         for i in range(min(iterations - 1, len(acc))):
             acc_list[i].append(acc[i])
         acc_list[-1].append(acc[-1])
@@ -139,15 +140,13 @@ def test(args):
         mean, ci = mean_confidence_interval(item)
         mean_list.append(mean)
         ci_list.append(ci)
-    print("Test Acc Mean{}".format(
-        ' '.join([str(i * 100)[:5] for i in mean_list])))
+    print("Test Acc Mean{}".format(' '.join([str(i * 100)[:5] for i in mean_list])))
     print("Test Acc ci{}".format(' '.join([str(i * 100)[:5] for i in ci_list])))
 
 
 def main(args):
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-    args.device = torch.device(
-        "cuda:0" if torch.cuda.is_available() else "cpu")
+    args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(args)
     if args.mode == 'train':
         train_embedding(args)

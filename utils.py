@@ -23,6 +23,9 @@ def mean_confidence_interval(data, confidence=0.95):
 
 
 def get_embedding(model, input, device):
+    """
+    Apply the trained feature extractor to given input data.
+    """
     batch_size = 64
     if input.shape[0] > batch_size:
         embed = []
