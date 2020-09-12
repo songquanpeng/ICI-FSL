@@ -1,5 +1,7 @@
 import math
 import os
+import csv
+import time
 
 import numpy as np
 import requests
@@ -18,6 +20,7 @@ def train_embedding(args):
     """
     Train the feature extractor and save the model parameters.
     """
+    start_time = time.time()
     setup_seed(2333)
     trained_root = os.path.join('./trained', args.dataset)
     os.makedirs(trained_root, exist_ok=True)
@@ -45,43 +48,51 @@ def train_embedding(args):
     scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
     criterion = nn.CrossEntropyLoss()
     best_acc = 0.0
-    # Origin is 120
-    for epoch in range(6):
-        model.train()
-        scheduler.step(epoch)
-        loss_list = []
-        train_acc_list = []
-        for images, labels in tqdm(source_loader, ncols=0):
-            predictions = model(images.to(args.device))
-            loss = criterion(predictions, labels.to(args.device))
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            loss_list.append(loss.item())
-            train_acc_list.append(predictions.max(1)[1].cpu().eq(
-                labels).float().mean().item())
-        acc = []
-        model.eval()
-        for images, labels in test_loader:
-            predictions = model(images.to(args.device)).detach().cpu()
-            predictions = torch.argmax(predictions, 1).reshape(-1)
-            labels = labels.reshape(-1)
-            acc += (predictions == labels).tolist()
-        acc = np.mean(acc)
-        log_info = 'Epoch:{} Train-loss:{} Train-acc:{} Valid-acc:{}'.format(epoch, str(np.mean(loss_list))[:6], str(
-            np.mean(train_acc_list))[:6], str(acc)[:6])
-        print(log_info)
-        if 'MESSAGE_PUSH_URL' in os.environ:
-            requests.get(f"{os.environ['MESSAGE_PUSH_URL']}{log_info}")
-        if acc > best_acc:
-            best_acc = acc
-            save_path = os.path.join(
-                trained_root, "res12_epoch{}.pth.tar".format(epoch))
-            torch.save(model.state_dict(), save_path)
-            torch.save(model.state_dict(), os.path.join(trained_root, 'res12_best.pth.tar'))
+    with open('./log/train.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Epoch", "Train-loss", "Train-acc", "Valid-acc"])
+        file.flush()
+        # Origin is 120
+        for epoch in range(120):
+            model.train()
+            scheduler.step(epoch)
+            loss_list = []
+            train_acc_list = []
+            for images, labels in tqdm(source_loader, ncols=0):
+                predictions = model(images.to(args.device))
+                loss = criterion(predictions, labels.to(args.device))
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                loss_list.append(loss.item())
+                train_acc_list.append(predictions.max(1)[1].cpu().eq(
+                    labels).float().mean().item())
+            acc = []
+            model.eval()
+            for images, labels in test_loader:
+                predictions = model(images.to(args.device)).detach().cpu()
+                predictions = torch.argmax(predictions, 1).reshape(-1)
+                labels = labels.reshape(-1)
+                acc += (predictions == labels).tolist()
+            acc = np.mean(acc)
+            log_info = [epoch, str(np.mean(loss_list))[:6], str(np.mean(train_acc_list))[:6], str(acc)[:6]]
+            writer.writerow(log_info)
+            file.flush()
+            print(log_info)
+            if 'MESSAGE_PUSH_URL' in os.environ:
+                requests.get(f"{os.environ['MESSAGE_PUSH_URL']}{log_info}")
+            if acc > best_acc:
+                best_acc = acc
+                save_path = os.path.join(
+                    trained_root, "res12_epoch{}.pth.tar".format(epoch))
+                torch.save(model.state_dict(), save_path)
+                torch.save(model.state_dict(), os.path.join(trained_root, 'res12_best.pth.tar'))
+    end_time = time.time()
+    if 'MESSAGE_PUSH_URL' in os.environ:
+        requests.get(f"{os.environ['MESSAGE_PUSH_URL']}Training done, time used: {(end_time - start_time) / 3600}h.")
 
 
-def test(args):
+def train_with_ICI(args):
     setup_seed(2333)
     import warnings
     warnings.filterwarnings('ignore')
@@ -140,8 +151,11 @@ def test(args):
         mean, ci = mean_confidence_interval(item)
         mean_list.append(mean)
         ci_list.append(ci)
-    print("Test Acc Mean{}".format(' '.join([str(i * 100)[:5] for i in mean_list])))
-    print("Test Acc ci{}".format(' '.join([str(i * 100)[:5] for i in ci_list])))
+    result = "Test Acc Mean{}".format(' '.join([str(i * 100)[:5] for i in mean_list]))
+    result += "\nTest Acc ci{}".format(' '.join([str(i * 100)[:5] for i in ci_list]))
+    print(result)
+    if 'MESSAGE_PUSH_URL' in os.environ:
+        requests.get(f"{os.environ['MESSAGE_PUSH_URL']}{result}")
 
 
 def main(args):
@@ -151,7 +165,7 @@ def main(args):
     if args.mode == 'train':
         train_embedding(args)
     elif args.mode == 'test':
-        test(args)
+        train_with_ICI(args)
     else:
         raise NameError
 

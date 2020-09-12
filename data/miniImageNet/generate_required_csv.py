@@ -1,7 +1,7 @@
 import os
 
 dataset_types = ['train', 'val', 'test']
-miniImageNet_path = r'D:\Research\Data\miniImageNet'
+miniImageNet_path = r'D:\Data\miniImageNet'
 generated_csv_path = './data/miniImageNet'
 
 
