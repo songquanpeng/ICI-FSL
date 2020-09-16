@@ -33,8 +33,9 @@ def config():
                         help='Reduced dimension.')
     parser.add_argument('--embed', type=str, default='pca',
                         help='Dimensionality reduction algorithm.')
-    parser.add_argument('--unlabel', type=int, default=0,
+    parser.add_argument('--unlabeled', type=int, default=0,
                         help='Number of unlabeled examples per class, 0 means TFSL setting.')
     parser.add_argument('--img_size', type=int, default=84)
+    parser.add_argument('--log_filename', type=str, default='log/test_miniImageNet.log')
     args = parser.parse_args()
     return args

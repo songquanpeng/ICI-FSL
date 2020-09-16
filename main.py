@@ -1,5 +1,6 @@
 import math
 import os
+import datetime
 import csv
 import time
 
@@ -48,7 +49,7 @@ def train_embedding(args):
     scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
     criterion = nn.CrossEntropyLoss()
     best_acc = 0.0
-    with open('./log/train.csv', 'w', newline='') as file:
+    with open('log/train_miniImageNet.csv', 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["Epoch", "Train-loss", "Train-acc", "Valid-acc"])
         file.flush()
@@ -65,8 +66,7 @@ def train_embedding(args):
                 loss.backward()
                 optimizer.step()
                 loss_list.append(loss.item())
-                train_acc_list.append(predictions.max(1)[1].cpu().eq(
-                    labels).float().mean().item())
+                train_acc_list.append(predictions.max(1)[1].cpu().eq(labels).float().mean().item())
             acc = []
             model.eval()
             for images, labels in test_loader:
@@ -93,6 +93,9 @@ def train_embedding(args):
 
 
 def train_with_ICI(args):
+    with open(args.log_filename, 'a') as file:
+        file.write(f"{str(datetime.datetime.now())} : {str(args)}\n")
+        file.flush()
     setup_seed(2333)
     import warnings
     warnings.filterwarnings('ignore')
@@ -119,15 +122,15 @@ def train_with_ICI(args):
     test_dataset = DataSet(data_root, 'test', args.img_size)
     # sample is used to offer indexes
     sampler = CategoriesSampler(test_dataset.label, args.num_batches,
-                                args.num_test_ways, (args.num_shots, 15, args.unlabel))
+                                args.num_test_ways, (args.num_shots, 15, args.unlabeled))
     test_loader = DataLoader(test_dataset, batch_sampler=sampler, num_workers=args.num_workers, pin_memory=True)
     k = args.num_shots * args.num_test_ways
     loader = tqdm(test_loader, ncols=0)
-    iterations = math.ceil(args.unlabel / args.step) + 2 if args.unlabel != 0 else math.ceil(15 / args.step) + 2
+    iterations = math.ceil(args.unlabeled / args.step) + 2 if args.unlabeled != 0 else math.ceil(15 / args.step) + 2
     acc_list = [[] for _ in range(iterations)]
     for data, indicator in loader:
-        targets = torch.arange(args.num_test_ways).repeat(args.num_shots + 15 + args.unlabel).long()[
-            indicator[:args.num_test_ways * (args.num_shots + 15 + args.unlabel)] != 0]
+        targets = torch.arange(args.num_test_ways).repeat(args.num_shots + 15 + args.unlabeled).long()[
+            indicator[:args.num_test_ways * (args.num_shots + 15 + args.unlabeled)] != 0]
         data = data[indicator != 0].to(args.device)
         train_inputs = data[:k]
         train_targets = targets[:k].cpu().numpy()
@@ -136,7 +139,7 @@ def train_with_ICI(args):
         train_embeddings = get_embedding(model, train_inputs, args.device)
         ici.fit(train_embeddings, train_targets)
         test_embeddings = get_embedding(model, test_inputs, args.device)
-        if args.unlabel != 0:
+        if args.unlabeled != 0:
             unlabeled_inputs = data[k + 15 * args.num_test_ways:]
             unlabeled_embeddings = get_embedding(model, unlabeled_inputs, args.device)
         else:
@@ -151,11 +154,13 @@ def train_with_ICI(args):
         mean, ci = mean_confidence_interval(item)
         mean_list.append(mean)
         ci_list.append(ci)
-    result = "Test Acc Mean{}".format(' '.join([str(i * 100)[:5] for i in mean_list]))
-    result += "\nTest Acc ci{}".format(' '.join([str(i * 100)[:5] for i in ci_list]))
+
+    result = "Test Acc Mean {}".format(' '.join([str(i * 100)[:5] for i in mean_list]))
+    result += "\tTest Acc ci {}".format(' '.join([str(i * 100)[:5] for i in ci_list]))
+    with open(args.log_filename, 'a') as file:
+        file.write(f"{str(datetime.datetime.now())} : {str(result)}\n")
+        file.flush()
     print(result)
-    if 'MESSAGE_PUSH_URL' in os.environ:
-        requests.get(f"{os.environ['MESSAGE_PUSH_URL']}{result}")
 
 
 def main(args):

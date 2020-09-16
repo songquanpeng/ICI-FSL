@@ -1,12 +1,12 @@
 import os
 
 dataset_types = ['train', 'val', 'test']
-miniImageNet_path = r'D:\Data\miniImageNet'
-generated_csv_path = './data/miniImageNet'
+dataset_path = r'D:\Data\CIFAR100-FS'
+generated_csv_path = './data/CIFAR100-FS'
 
 
 def generate_specified_csv(dataset_type):
-    path = os.path.join(miniImageNet_path, dataset_type)
+    path = os.path.join(dataset_path, dataset_type)
     with open(f'{generated_csv_path}/{dataset_type}.csv', 'w') as csv_file:
         csv_file.write("path, label\n")
         for class_name in os.listdir(path):
