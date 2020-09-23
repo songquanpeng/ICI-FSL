@@ -144,7 +144,7 @@ def train_with_ICI(args):
             unlabeled_embeddings = get_embedding(model, unlabeled_inputs, args.device)
         else:
             unlabeled_embeddings = None
-        acc = ici.predict(test_embeddings, unlabeled_embeddings, True, test_targets)
+        acc = ici.predict(test_embeddings, unlabeled_embeddings, True, test_targets, disable_ici=args.disable_ici)
         for i in range(min(iterations - 1, len(acc))):
             acc_list[i].append(acc[i])
         acc_list[-1].append(acc[-1])

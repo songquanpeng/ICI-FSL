@@ -14,3 +14,5 @@ for classifier in ['lr', 'svm']:
         end_time = time.time()
         if 'MESSAGE_PUSH_URL' in os.environ:
             requests.get(f"{os.environ['MESSAGE_PUSH_URL']}Setting classifier={classifier} num_shots={num_shots} unlabeled_data_num={unlabeled_data_num} executed done with {(end_time - start_time) / 60} min used.")
+
+# nums = input().split(); to_num = lambda x : float(x); nums = list(map(to_num, nums)); print(max(nums))

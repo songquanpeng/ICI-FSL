@@ -36,7 +36,7 @@ class ICI(object):
         self.support_X = self.norm(X)
         self.support_y = y
 
-    def predict(self, X, unlabeled_X=None, show_detail=False, query_y=None):
+    def predict(self, X, unlabeled_X=None, show_detail=False, query_y=None, disable_ici=False):
         """
         1. Train a liner classifier with support set.
         2. Use the classifier to get pseudo label for unlabeled data.
@@ -68,21 +68,22 @@ class ICI(object):
         # Train classifier using (Xs; ys);
         self.classifier.fit(self.support_X, self.support_y)
         acc_list = []
-        for _ in range(self.max_iter):
-            if show_detail:
-                predicts = self.classifier.predict(query_X)
-                acc_list.append(np.mean(predicts == query_y))
-            # Get pseudo-label yu for Xu by classifier
-            pseudo_y = self.classifier.predict(unlabeled_X)
-            y = np.concatenate([support_y, pseudo_y])
-            Y = self.label2onehot(y, way)
-            y_hat = np.dot(X_hat, Y)
-            # Use the ICI algorithm to expand our support set.
-            support_set = self.expand(support_set, X_hat, y_hat, way, num_support, pseudo_y, embeddings, y, query_y)
-            y = np.argmax(Y, axis=1)
-            self.classifier.fit(embeddings[support_set], y[support_set])
-            if len(support_set) == len(embeddings):
-                break
+        if not disable_ici:
+            for _ in range(self.max_iter):
+                if show_detail:
+                    predicts = self.classifier.predict(query_X)
+                    acc_list.append(np.mean(predicts == query_y))
+                # Get pseudo-label yu for Xu by classifier
+                pseudo_y = self.classifier.predict(unlabeled_X)
+                y = np.concatenate([support_y, pseudo_y])
+                Y = self.label2onehot(y, way)
+                y_hat = np.dot(X_hat, Y)
+                # Use the ICI algorithm to expand our support set.
+                support_set = self.expand(support_set, X_hat, y_hat, way, num_support, pseudo_y, embeddings, y, query_y)
+                y = np.argmax(Y, axis=1)
+                self.classifier.fit(embeddings[support_set], y[support_set])
+                if len(support_set) == len(embeddings):
+                    break
         predicts = self.classifier.predict(query_X)
         if show_detail:
             acc_list.append(np.mean(predicts == query_y))

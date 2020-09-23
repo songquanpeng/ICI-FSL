@@ -37,5 +37,6 @@ def config():
                         help='Number of unlabeled examples per class, 0 means TFSL setting.')
     parser.add_argument('--img_size', type=int, default=84)
     parser.add_argument('--log_filename', type=str, default='log/test_miniImageNet.log')
+    parser.add_argument('--disable_ici', type=bool, default=False)
     args = parser.parse_args()
     return args

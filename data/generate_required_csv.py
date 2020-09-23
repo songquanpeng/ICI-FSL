@@ -1,6 +1,7 @@
 import os
 
 dataset_types = ['train', 'val', 'test']
+dataset = ['CIFAR100-FS', 'miniImageNet']
 dataset_path = r'D:\Data\CIFAR100-FS'
 generated_csv_path = './data/CIFAR100-FS'
 
