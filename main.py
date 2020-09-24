@@ -99,7 +99,7 @@ def train_with_ICI(args):
     setup_seed(2333)
     import warnings
     warnings.filterwarnings('ignore')
-    if args.dataset == 'cub':
+    if args.dataset == 'CUB':
         num_classes = 100
     elif args.dataset == 'tieredImageNet':
         num_classes = 351

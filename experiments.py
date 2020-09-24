@@ -2,8 +2,10 @@ import os
 import requests
 import time
 
-dataset = "CIFAR100-FS"
-saved_model = "trained/res12_cifar.pth.tar"
+# dataset = "CIFAR100-FS"
+# saved_model = "trained/res12_cifar.pth.tar"
+dataset = "CUB"
+saved_model = "trained/res12_cub.pth.tar"
 
 for classifier in ['lr', 'svm']:
     for num_shots, unlabeled_data_num in [(1, 0), (5, 0), (1, 15), (5, 15), (1, 30), (5, 50), (1, 80), (5, 80)]:
